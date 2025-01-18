@@ -5,5 +5,5 @@ Aplicação do Método de Diferenças Finitas (MDF) para resolução numérica d
 
 ## ⚙️ Funcionamento
 1. Faço o download do `main.py`
-2. Instale os diretórios pendentes, no caso, `numpy` e `matplotlib.pyplot`
+2. Instale os diretórios pendentes, no caso, `numpy` e `matplotlib`
 3. Execute o programa seguindo as intruções via terminal
