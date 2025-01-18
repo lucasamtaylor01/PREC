@@ -1,33 +1,32 @@
-\documentclass[aps,column,amsmath,amssymb,floatfix]{revtex4}
+ \documentclass[column,amsmath,amssymb,floatfix]{revtex4}
 
-\usepackage{graphicx}% Include figure files
-\usepackage{dcolumn}% Align table columns on decimal point
-\usepackage{bm}% bold math
-\usepackage{amssymb}
+% ---- Pacotes para formatação de texto e símbolos matemáticos ----
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{amsfonts}
-\usepackage{epsf}
-\usepackage{color} % allows color in fonts
-\usepackage{verbatim}
-\usepackage{listings}
-\usepackage{xcolor}
-\usepackage{titlesec}
+
+% ---- Pacotes para gráficos e tabelas ----
+\usepackage{graphicx}
+\usepackage{dcolumn}
 \usepackage{float}
+
+% ---- Pacotes para formatação e personalização de cores e fontes ----
+\usepackage{xcolor}
+\usepackage{color}
+\usepackage{bm}
+\usepackage{titlesec}
 \usepackage{enumitem}
 
-\usepackage[brazilian]{babel}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{hyperref}
-\newcommand{\PAR}[1]{\left({[#1]}\right)}
-
+% ---- Pacotes para código fonte ----
+\usepackage{listings}
+\usepackage{verbatim}
 
 \lstdefinestyle{customc}{
   belowcaptionskip=1\baselineskip,
   breaklines=true,
   frame=none,
   xleftmargin=\parindent,
-  language=C,
+  language=python,
   showstringspaces=false,
   basicstyle=\footnotesize\ttfamily,
   keywordstyle=\bfseries\color{green!40!black},
@@ -45,8 +44,29 @@
   commentstyle=\itshape\color{purple!40!black},
 }
 
-\lstset{escapechar=@,style=customc}
+\lstset{
+ escapechar=@,
+ style=customc,
+ inputencoding=utf8, 
+ extendedchars=true,
+ literate={á}{{\'{a}}}1 {ã}{{\~{a}}}1 {é}{{\'{e}}}1 {ê}{{\^{e}}}1 {í}{{\'{i}}}1 
+          {ó}{{\'{o}}}1 {õ}{{\~{o}}}1 {ú}{{\'{u}}}1 {ç}{{\c{c}}}1,
+ keepspaces=true,
+ columns=flexible,
+ basicstyle=\ttfamily
+}
+% ---- Pacotes de idioma e codificação ----
+\usepackage[brazilian]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
 
+% ---- Pacote para criação de links e hiperlinks ----
+\usepackage{hyperref}
+
+% ---- Definição de comandos personalizados ----
+\newcommand{\PAR}[1]{\left({[#1]}\right)}
+
+% ---- Ajustes de espaçamento para títulos ----
 \titlespacing\section{0pt}{12pt plus 4pt minus 2pt}{8pt plus 2pt minus 2pt}
 \titlespacing\subsection{0pt}{12pt plus 4pt minus 2pt}{8pt plus 2pt minus 2pt}
 \titlespacing\subsubsection{0pt}{12pt plus 4pt minus 2pt}{0pt plus 2pt minus 2pt}
@@ -67,66 +87,146 @@
 \section{Introdução} 
 No presente relatório, vamos estudar métodos numéricos aplicados em \textit{Python} para resolução da \textit{equação da velocidade da onda} dada por:
 \begin{equation}
-    u_{tt} = c^2 u_{xx}, \quad c>0.
-    \label{eq:equacao-da-onda}
+	u_{tt} = c^2 u_{xx}, \quad c>0.
+	\label{eq:equacao-da-onda}
 \end{equation}
 em três problemas distintos. Em cada um deles, são fornecidas condições iniciais:
-\begin{equation*}
-    u(x,0) = \Phi(x) \quad \text{ e } \quad u_t(x, 0) = \Psi(x)
-\end{equation*}
+\begin{equation}
+	u(x,0) = \Phi(x) \quad \text{ e } \quad u_t(x, 0) = \Psi(x)
+    \label{eq:condicao-inicial-onda}
+\end{equation}
 
 Para a resolução, utilizaremos o esquema de diferenças finitas dado por:
 \begin{align}
-   U_m^{n+1} &= c^2\lambda^2(U_{m-1}^n + U_{m+1}^n) + 2(1-c^2\lambda^2)U_m^n - U_m^{n-1} \label{eq:edf-principal}\\
-   U_m^0 &= \Phi(x_m) \label{eq:edf-inicial}\\
-   U_m^1 &= \frac{c^2\lambda^2}{2}(\Phi_{m-1} + \Phi_{m+1}) + (1-c^2\lambda^2)\Phi_m + \tau\Psi_m \label{eq:edf-passo-inicial}
+	U_m^{n+1} & = c^2\lambda^2(U_{m-1}^n + U_{m+1}^n) + 2(1-c^2\lambda^2)U_m^n - U_m^{n-1} \label{eq:edf-principal}                  \\
+	U_m^0     & = \Phi(x_m) \label{eq:edf-inicial}                                                                                   \\
+	U_m^1     & = \frac{c^2\lambda^2}{2}(\Phi_{m-1} + \Phi_{m+1}) + (1-c^2\lambda^2)\Phi_m + \tau\Psi_m \label{eq:edf-passo-inicial} 
 \end{align}
 
 As condições de fronteira consideradas são:
 \begin{enumerate}[label=\roman*.]
-    \item Dirichlet: $u(a,t) = \alpha(t)$ ou $u(b,t) = \beta(t)$
-    \item Neumann: $u_x(a,t) = \phi(t)$ ou $u_x(b,t) = \psi(t)$
-    \item Combinação das anteriores
+	\item Dirichlet: $u(a,t) = \alpha(t)$ ou $u(b,t) = \beta(t)$
+	\item Neumann: $u_x(a,t) = \phi(t)$ ou $u_x(b,t) = \psi(t)$
+	\item Combinação das anteriores
 \end{enumerate}
 
 Utilizamos as seguintes aproximações para cada condição de fronteira:
 \begin{enumerate}[label=\roman*.]
-    \item Para Dirichlet:
-    \begin{align*}
-        \text{Se } u(a,t) &= \alpha(t): U_0^{n+1} = \alpha(t_{n+1})\\
-        \text{Se } u(b,t) &= \beta(t): U_M^{n+1} = \beta(t_{n+1})
-    \end{align*}   
-
-    \item Para Neumann de ordem 1:
-    \begin{align*}
-        \text{Se } u_x(a,t) &= \phi(t): U_0^{n+1} = U_1^{n+1} - h\phi(t_{n+1})\\
-        \text{Se } u_x(b,t) &= \psi(t): U_M^{n+1} = U_{M-1}^{n+1} + h\psi(t_{n+1})
-    \end{align*}
-
-    \item Para Neumann de ordem 2:
-    \begin{align*}
-        \text{Se } u_x(a,t) &= \phi(t): U_0^{n+1} = \frac{4U_1^{n+1} - U_2^{n+1} - 2h\phi(t_{n+1})}{3}\\
-        \text{Se } u_x(b,t) &= \psi(t): U_M^{n+1} = \frac{4U_{M-1}^{n+1} - U_{M-2}^{n+1} + 2h\psi(t_{n+1})}{3}
-    \end{align*}    
+	\item Para Dirichlet:
+	      \begin{align*}
+	      	\text{Se } u(a,t) & = \alpha(t): U_0^{n+1} = \alpha(t_{n+1}) \\
+	      	\text{Se } u(b,t) & = \beta(t): U_M^{n+1} = \beta(t_{n+1})   
+	      \end{align*}   
+	      
+	\item Para Neumann de ordem 1:
+	      \begin{align*}
+	      	\text{Se } u_x(a,t) & = \phi(t): U_0^{n+1} = U_1^{n+1} - h\phi(t_{n+1})     \\
+	      	\text{Se } u_x(b,t) & = \psi(t): U_M^{n+1} = U_{M-1}^{n+1} + h\psi(t_{n+1}) 
+	      \end{align*}
+	      
+	\item Para Neumann de ordem 2:
+	      \begin{align*}
+	      	\text{Se } u_x(a,t) & = \phi(t): U_0^{n+1} = \frac{4U_1^{n+1} - U_2^{n+1} - 2h\phi(t_{n+1})}{3}         \\
+	      	\text{Se } u_x(b,t) & = \psi(t): U_M^{n+1} = \frac{4U_{M-1}^{n+1} - U_{M-2}^{n+1} + 2h\psi(t_{n+1})}{3} 
+	      \end{align*}    
 \end{enumerate}
 
 onde:
 \begin{itemize}
-    \item $u(x,t)$ é a solução exata no ponto $x$ e no instante $t$
-    \item $U_m^n$ é a aproximação numérica de $u(x_m,t_n)$
-    \item $c$ é a velocidade da onda
-    \item $h$ é o espaçamento da malha espacial
-    \item $\tau$ é o espaçamento da malha temporal
-    \item $\lambda = \tau/h$ é a razão entre os espaçamentos
-    \item $M$ é o número de pontos da malha espacial
-    \item $x_m = a + mh$ são os pontos da malha espacial
-    \item $t_n = n\tau$ são os pontos da malha temporal
-    \item $\Phi(x)$ é a condição inicial de posição
-    \item $\Psi(x)$ é a condição inicial de velocidade
+	\item $u(x,t)$ é a solução exata no ponto $x$ e no instante $t$
+	\item $U_m^n$ é a aproximação numérica de $u(x_m,t_n)$
+	\item $c$ é a velocidade da onda
+	\item $h$ é o espaçamento da malha espacial
+	\item $\tau$ é o espaçamento da malha temporal
+	\item $\lambda = \tau/h$ é a razão entre os espaçamentos
+	\item $M$ é o número de pontos da malha espacial
+	\item $x_m = a + mh$ são os pontos da malha espacial
+	\item $t_n = n\tau$ são os pontos da malha temporal
+	\item $\Phi(x)$ é a condição inicial de posição
+	\item $\Psi(x)$ é a condição inicial de velocidade
 \end{itemize}
 
 \section{Descrição da parte teórica do trabalho}
+
 \section{Implementação e explicação da resolução da tarefa}
+
+A respeito da implementação da tarefa, temos que foi utilizado o ambiente \textit{Python} e as bibliotecas \texttt{matplotlib.pyplot} e \texttt{numpy}. Por questão de simplicidade, o programa foi desenvolvido em um único arquivo, \texttt{main.py}. O programa \texttt{main.py} é constituído por uma função principal, a função \texttt{main()} e outras cinco funções.
+
+No que diz respeito à função \texttt{main()}, trata-se de um controle de fluxo para o usuário selecionar o exemplo trabalhado. No que diz respeito às outras, temos duas funções principais: \texttt{resolve\_eq\_onda()} e a função \texttt{aplica\_cond\_contorno()}, e três funções dedicadas a cada exemplo proposto pelo enunciado: \texttt{exemplo01()}, \texttt{exemplo02()} e \texttt{exemplo03()}. No presente relatório, vamos realizar uma análise mais profunda nas duas primeiras funções citadas e pontuar as particularidades das funções dedicadas à cada exemplo.
+
+
+
+\subsection{Função \texttt{resolve\_eq\_onda()}}
+
+A função \texttt{resolve\_eq\_onda()} é dada por:
+
+
+\begin{lstlisting}
+def resolve_eq_onda(a, b, T, h, lambda_val, c=1.0, phi=None, psi=None,
+                    cont_esq=None, cont_dir=None,
+                    tipo_cont_esq='dirichlet',
+                    tipo_cont_dir='dirichlet',
+                    ordem_neumann=2):
+    """Resolve a equação da onda usando diferenças finitas."""
+    M = int((b - a) / h)  # número de intervalos espaciais
+    tau = lambda_val * h  # passo temporal
+    N = int(T / tau)  # número de passos temporais
+
+    # Pontos da malha
+    x = np.linspace(a, b, M + 1)
+    t = np.linspace(0, T, N + 1)
+    U = np.zeros((N + 1, M + 1))
+
+    # Condição inicial de posição
+    if phi is not None:
+        U[0, :] = phi(x)
+
+    # Primeiro passo temporal usando velocidade inicial
+    if psi is not None:
+        U[1, 1:-1] = (c ** 2 * lambda_val ** 2 / 2) * (U[0, :-2] + U[0, 2:]) + \
+                     (1 - c ** 2 * lambda_val ** 2) * U[0, 1:-1] + \
+                     tau * psi(x[1:-1])
+
+        # Aplica condições de fronteira no primeiro passo
+        U[1, 0] = aplica_cond_contorno(U, t, 1, 0, cont_esq, tipo_cont_esq, h, ordem_neumann)
+        U[1, -1] = aplica_cond_contorno(U, t, 1, M, cont_dir, tipo_cont_dir, h, ordem_neumann)
+
+    # Loop principal no tempo
+    for n in range(1, N):
+        # Atualiza pontos interiores
+        U[n + 1, 1:-1] = c ** 2 * lambda_val ** 2 * (U[n, :-2] + U[n, 2:]) + \
+                         2 * (1 - c ** 2 * lambda_val ** 2) * U[n, 1:-1] - \
+                         U[n - 1, 1:-1]
+
+        # Aplica condições de contorno
+        U[n + 1, 0] = aplica_cond_contorno(U, t, n + 1, 0, cont_esq, tipo_cont_esq, h, ordem_neumann)
+        U[n + 1, -1] = aplica_cond_contorno(U, t, n + 1, M, cont_dir, tipo_cont_dir, h, ordem_neumann)
+
+    return U, x, t
+\end{lstlisting}
+ A função \texttt{resolve\_eq\_onda()} recebe os seguintes parâmetros:
+ \begin{itemize}
+   \item \texttt{a, b}: Limites do intervalo espacial $[a,b]$
+   \item \texttt{T}: Tempo final da simulação
+   \item \texttt{h}: Passo espacial (discretização em $x$)
+   \item \texttt{lambda\_val}: Razão $\tau/h$, onde $\tau$ é o passo temporal 
+   \item \texttt{c}: Velocidade da onda (padrão = 1.0)
+   \item \texttt{phi}: Função para condição inicial de posição $u(x,0)$
+   \item \texttt{psi}: Função para condição inicial de velocidade $u_t(x,0)$
+   \item \texttt{cont\_esq}: Função para condição de contorno em $x=a$
+   \item \texttt{cont\_dir}: Função para condição de contorno em $x=b$
+   \item \texttt{tipo\_cont\_esq}: Tipo da condição de contorno em $x=a$ (Dirichlet ou Neumann)
+   \item \texttt{tipo\_cont\_dir}: Tipo da condição de contorno em $x=b$ (Dirichlet ou Neumann)
+   \item \texttt{ordem\_neumann}: Ordem de aproximação para condições de Neumann (1 ou 2)
+\end{itemize}
+
+Em seguida, são definidas as variáveis \texttt{M}, \texttt{tau} e \texttt{N}, estas relacionadas com a equação de diferenças finitas; as variáveis \texttt{x}, \texttt{t} e \texttt{u}, associadas com a malha de pontos. Após a definição de variáveis, o programa começa o tratamento com a condição inicial alinhado com as equações \eqref{eq:condicao-inicial-onda} e \eqref{eq:edf-inicial}.
+
+Por fim, são definidos os pontos interiores em dois laços. O primeiro é responsável pelo cálculo do primeiro passo, isto é, quando $n=1$ usando a condição inicial proveniente da equação \eqref{eq:edf-passo-inicial}. Enquanto o segundo, é responsável pelos pontos onde $2 \leq n \leq N$ usando a equação \eqref{eq:edf-principal}. Ambos os laços levam em consideração as condições de fronteiras e suas características são tratadas via \texttt{aplica\_cond\_contorno()}, apresentada a seguir.
+
+\subsection{Função \texttt{aplica\_cond\_contorno()}}
+        
+
 \section{Apresentação dos resultados}
 
 \section{Conclusão}
