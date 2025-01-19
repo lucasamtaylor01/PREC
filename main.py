@@ -110,27 +110,34 @@ def exemplo1():
 
     return resultados
 
-
 def exemplo2():
-
     def phi(x): return np.where(np.abs(x) <= 1, 1 - np.abs(x), 0)
-
     def psi(x): return np.zeros_like(x)
-
     def cont_esq(t): return 0
-
     def cont_dir(t): return 0
 
-    h_vals = [1 / 10, 1 / 20, 1 / 40, 1 / 80]
+    h_vals = [1/10, 1/20, 1/40, 1/80]
     lambda_val = 0.95
-
+    
+    # Lista para armazenar resultados
+    resultados = []
+    
+    # Primeiro mostra todos os gráficos
     for h in h_vals:
-        U, x, t = resolve_eq_onda(
+        U, x, _ = resolve_eq_onda(
             a=-2, b=2, T=3.8, h=h, lambda_val=lambda_val,
             phi=phi, psi=psi,
             cont_esq=cont_esq, cont_dir=cont_dir,
             tipo_cont_esq='dirichlet', tipo_cont_dir='neumann'
         )
+
+        # Calcula erro de simetria
+        idx_2 = np.abs(x - 2).argmin()
+        U_esq = U[-1, :idx_2]
+        U_dir = U[-1, idx_2:][::-1]
+        n = min(len(U_esq), len(U_dir))
+        erro_simetria = np.max(np.abs(U_esq[-n:] - U_dir[-n:]))
+        resultados.append((h, erro_simetria))
 
         plt.figure(figsize=(10, 6))
         plt.plot(x, U[-1, :])
@@ -140,6 +147,14 @@ def exemplo2():
         plt.grid(True)
         plt.show()
 
+    # Depois mostra a análise dos erros
+    print("\nAnálise da solução em T=3.8:")
+    print("h\t\tErro de simetria")
+    print("-" * 30)
+    for h, erro in resultados:
+        print(f"{h:.6f}\t{erro:.6e}")
+        
+    return resultados
 
 def exemplo3():
 
