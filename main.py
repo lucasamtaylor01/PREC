@@ -7,38 +7,32 @@ def resolve_eq_onda(a, b, T, h, lambda_val, c=1.0, phi=None, psi=None,
                     tipo_cont_esq='dirichlet',
                     tipo_cont_dir='dirichlet',
                     ordem_neumann=2):
-    """Resolve a equação da onda usando diferenças finitas."""
-    M = int((b - a) / h)  # número de intervalos espaciais
-    tau = lambda_val * h  # passo temporal
-    N = int(T / tau)  # número de passos temporais
+                      
+    # Discretização do domínio 
+    M = int((b - a) / h)
+    tau = lambda_val * h
+    N = int(T / tau)
 
-    # Pontos da malha
     x = np.linspace(a, b, M + 1)
     t = np.linspace(0, T, N + 1)
     U = np.zeros((N + 1, M + 1))
 
-    # Condição inicial de posição
+    # Condições iniciais
     if phi is not None:
         U[0, :] = phi(x)
-
-    # Primeiro passo temporal usando velocidade inicial
     if psi is not None:
+        # Primeiro passo temporal (ordem 2)
         U[1, 1:-1] = (c ** 2 * lambda_val ** 2 / 2) * (U[0, :-2] + U[0, 2:]) + \
                      (1 - c ** 2 * lambda_val ** 2) * U[0, 1:-1] + \
                      tau * psi(x[1:-1])
-
-        # Aplica condições de fronteira no primeiro passo
         U[1, 0] = aplica_cond_contorno(U, t, 1, 0, cont_esq, tipo_cont_esq, h, ordem_neumann)
         U[1, -1] = aplica_cond_contorno(U, t, 1, M, cont_dir, tipo_cont_dir, h, ordem_neumann)
 
-    # Loop principal no tempo
+    # Esquema explícito para demais passos
     for n in range(1, N):
-        # Atualiza pontos interiores
         U[n + 1, 1:-1] = c ** 2 * lambda_val ** 2 * (U[n, :-2] + U[n, 2:]) + \
                          2 * (1 - c ** 2 * lambda_val ** 2) * U[n, 1:-1] - \
                          U[n - 1, 1:-1]
-
-        # Aplica condições de contorno
         U[n + 1, 0] = aplica_cond_contorno(U, t, n + 1, 0, cont_esq, tipo_cont_esq, h, ordem_neumann)
         U[n + 1, -1] = aplica_cond_contorno(U, t, n + 1, M, cont_dir, tipo_cont_dir, h, ordem_neumann)
 
@@ -46,40 +40,27 @@ def resolve_eq_onda(a, b, T, h, lambda_val, c=1.0, phi=None, psi=None,
 
 
 def aplica_cond_contorno(U, t, n, m, func_cont, tipo_cont, h, ordem):
-    """Aplica condição de contorno específica"""
     if tipo_cont.lower() == 'dirichlet':
         return func_cont(t[n])
-
     elif tipo_cont.lower() == 'neumann':
         if m == 0:  # Contorno esquerdo
             if ordem == 1:
                 return U[n, 1] - h * func_cont(t[n])
-            # ordem == 2
             return (4 * U[n, 1] - U[n, 2] - 2 * h * func_cont(t[n])) / 3
         else:  # Contorno direito
             if ordem == 1:
                 return U[n, -2] + h * func_cont(t[n])
-            # ordem == 2
             return (4 * U[n, -2] - U[n, -3] + 2 * h * func_cont(t[n])) / 3
 
 
 def exemplo1():
-    def phi(x):
-        return 2 * np.cos(x)
+    def phi(x): return 2 * np.cos(x)
+    def psi(x): return np.zeros_like(x)
+    def cont_esq(t): return 0                        # u_x(0,t) = 0
+    def cont_dir(t): return 2 * np.cos(1) * np.cos(t)  # u(1,t)
+    def sol_exata(x, t): return np.cos(x + t) + np.cos(x - t)
 
-    def psi(x):
-        return np.zeros_like(x)
-
-    def cont_esq(t):
-        return 0  # ux(0,t) = 0
-
-    def cont_dir(t):
-        return 2 * np.cos(1) * np.cos(t)  # u(1,t)
-
-    def sol_exata(x, t):
-        return np.cos(x + t) + np.cos(x - t)
-
-    h_vals = [1 / 10, 1 / 20, 1 / 40]
+    h_vals = [1/10, 1/20, 1/40]
     ordens = [1, 2]
     resultados = []
 
@@ -110,73 +91,60 @@ def exemplo1():
 
     return resultados
 
+
 def exemplo2():
-   def phi(x): return np.where(np.abs(x) <= 1, 1 - np.abs(x), 0)
-   def psi(x): return np.zeros_like(x)
-   def cont_esq(t): return 0
-   def cont_dir(t): return 0
+    def phi(x): return np.where(np.abs(x) <= 1, 1 - np.abs(x), 0)
+    def psi(x): return np.zeros_like(x)
+    def cont_esq(t): return 0
+    def cont_dir(t): return 0
 
-   h_vals = [1/10, 1/20, 1/40, 1/80]
-   lambda_val = 0.95
-   
-   resultados = []
-   
-   for h in h_vals:
-       # Calculamos com intervalo [0,4] para ter simetria em x=2
-       U, x_calc, _ = resolve_eq_onda(
-           a=0, b=4, T=3.8, h=h, lambda_val=lambda_val,
-           phi=lambda x: np.where(np.abs(x-2) <= 1, 1 - np.abs(x-2), 0),
-           psi=psi,
-           cont_esq=cont_esq, cont_dir=cont_dir,
-           tipo_cont_esq='dirichlet', tipo_cont_dir='neumann'
-       )
+    h_vals = [1/10, 1/20, 1/40, 1/80]
+    lambda_val = 0.95
+    resultados = []
+    
+    for h in h_vals:
+        # Desloca condição inicial para x=2
+        U, x_calc, _ = resolve_eq_onda(
+            a=0, b=4, T=3.8, h=h, lambda_val=lambda_val,
+            phi=lambda x: np.where(np.abs(x-2) <= 1, 1 - np.abs(x-2), 0),
+            psi=psi,
+            cont_esq=cont_esq, cont_dir=cont_dir,
+            tipo_cont_esq='dirichlet', tipo_cont_dir='neumann'
+        )
 
-       # Erro de simetria em torno de x=2
-       idx_2 = np.abs(x_calc - 2).argmin()
-       U_esq = U[-1, :idx_2]
-       U_dir = U[-1, idx_2:][::-1]
-       n = min(len(U_esq), len(U_dir))
-       erro_simetria = np.max(np.abs(U_esq[-n:] - U_dir[-n:]))
-       resultados.append((h, erro_simetria))
+        # Verifica simetria em torno de x=2
+        idx_2 = np.abs(x_calc - 2).argmin()
+        U_esq = U[-1, :idx_2]
+        U_dir = U[-1, idx_2:][::-1]
+        n = min(len(U_esq), len(U_dir))
+        erro_simetria = np.max(np.abs(U_esq[-n:] - U_dir[-n:]))
+        resultados.append((h, erro_simetria))
 
-       # Plotagem com intervalo [-2,2]
-       x_plot = np.linspace(-2, 2, len(x_calc))
-       plt.figure(figsize=(10, 6))
-       plt.plot(x_plot, U[-1, :])
-       plt.title(f'Solução em T=3.8 (h={h})')
-       plt.xlabel('x')
-       plt.ylabel('u(x,T)')
-       plt.grid(True)
-       plt.show()
+        x_plot = np.linspace(-2, 2, len(x_calc))
+        plt.figure(figsize=(10, 6))
+        plt.plot(x_plot, U[-1, :])
+        plt.title(f'Solução em T=3.8 (h={h})')
+        plt.xlabel('x')
+        plt.ylabel('u(x,T)')
+        plt.grid(True)
+        plt.show()
 
-   print("\nAnálise da solução em T=3.8:")
-   print("h\t\tErro de simetria")
-   print("-" * 30)
-   for h, erro in resultados:
-       print(f"{h:.6f}\t{erro:.6e}")
-       
-   return resultados
-   # Depois mostra a análise dos erros
-   print("\nAnálise da solução em T=3.8:")
-   print("h\t\tErro de simetria")
-   print("-" * 30)
-   for h, erro in resultados:
-       print(f"{h:.6f}\t{erro:.6e}")
-       
-   return resultados
+    print("\nAnálise da solução em T=3.8:")
+    print("h\t\tErro de simetria")
+    print("-" * 30)
+    for h, erro in resultados:
+        print(f"{h:.6f}\t{erro:.6e}")
+        
+    return resultados
+
 
 def exemplo3():
-
     def phi(x):
         return np.exp(-1000 * (x - 0.5) ** 2) * np.sin(300 * x)
+    def psi(x): return np.zeros_like(x)
+    def cont(t): return 0
 
-    def psi(x):
-        return np.zeros_like(x)
-
-    def cont(t):
-        return 0
-
-    h = 1 / 300
+    h = 1/300
     lambda_vals = [1.0, 0.5]
     tempos = [0, 0.25, 2, 10]
 
@@ -198,6 +166,7 @@ def exemplo3():
             plt.grid(True)
             plt.show()
 
+        # Verifica retorno à condição inicial
         erro_2 = np.max(np.abs(U[int(2 / (lambda_val * h)), :] - U[0, :]))
         erro_10 = np.max(np.abs(U[int(10 / (lambda_val * h)), :] - U[0, :]))
         print(f"\nλ = {lambda_val}")
